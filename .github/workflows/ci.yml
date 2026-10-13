@@ -33,9 +33,23 @@ jobs:
       - name: Set the image name (lowercase)
         run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/voting-app-${{ matrix.service }}" >> "$GITHUB_ENV"
 
-      - name: Build and push ${{ matrix.service }} image
+      - name: Build ${{ matrix.service }} image
         uses: docker/build-push-action@v6
         with:
           context: ./${{ matrix.service }}
-          push: ${{ github.event_name == 'push' }}
+          load: true
+          push: false
           tags: ${{ env.IMAGE }}:${{ github.sha }}
+
+      - name: Scan ${{ matrix.service }} image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}:${{ github.sha }}
+          format: table
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '0'
+
+      - name: Push ${{ matrix.service }} image
+        if: github.event_name == 'push'
+        run: docker push ${{ env.IMAGE }}:${{ github.sha }}
