@@ -17,5 +17,5 @@ spec:
     spec:
       containers:
         - name: worker
-          image: {{ .Values.image.worker }}
+          image: "{{ .Values.image.worker }}:{{ .Values.image.tag }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}

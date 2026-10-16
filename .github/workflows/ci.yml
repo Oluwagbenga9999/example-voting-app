@@ -53,3 +53,17 @@ jobs:
       - name: Push ${{ matrix.service }} image
         if: github.event_name == 'push'
         run: docker push ${{ env.IMAGE }}:${{ github.sha }}
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-north-1
+      - run: aws eks update-kubeconfig --name voting-app --region eu-north-1
+      - run: helm upgrade --install voting ./helm/voting-app --set image.tag=${{ github.sha }} --wait --timeout 5m
