@@ -7,7 +7,22 @@ on:
     branches: [main]
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v4
+
+      - name: Lint the Helm chart
+        run: helm lint ./helm/voting-app --set-string db.password=test
+
+      - name: Render the Helm templates
+        run: helm template voting-app ./helm/voting-app --set-string db.password=test --set-string image.tag=test > /dev/null
+
+      - name: Check the vote app compiles
+        run: python3 -m py_compile vote/app.py
   build:
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,7 +63,7 @@ jobs:
           format: table
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-          exit-code: '0'
+          exit-code: '1'
 
       - name: Push ${{ matrix.service }} image
         if: github.event_name == 'push'
