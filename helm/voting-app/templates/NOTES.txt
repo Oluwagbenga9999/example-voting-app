@@ -1,0 +1,9 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named: {{ .Release.Name }}
+
+Vote app:   NodePort {{ .Values.service.votePort }}
+Result app: NodePort {{ .Values.service.resultPort }}
+
+To get the Node IP:
+  kubectl get nodes -o wide

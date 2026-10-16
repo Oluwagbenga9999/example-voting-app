@@ -1,0 +1,23 @@
+# Default values for voting-app
+
+replicaCount: 1
+
+image:
+  # Change these later to your GHCR images
+  vote: dockersamples/examplevotingapp_vote:latest
+  result: dockersamples/examplevotingapp_result:latest
+  worker: dockersamples/examplevotingapp_worker:latest
+  redis: redis:alpine
+  db: postgres:15-alpine
+
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  votePort: 31000
+  resultPort: 31001
+
+# You can change this later when using your own images from GHCR
+# Example:
+# image:
+#   vote: ghcr.io/oluwagbenga9999/voting-app-vote:abc123
