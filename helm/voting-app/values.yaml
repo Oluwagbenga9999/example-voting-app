@@ -8,3 +8,6 @@ image:
   pullPolicy: IfNotPresent
 
 replicaCount: 1
+
+db:
+  password: ""
