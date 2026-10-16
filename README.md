@@ -1,65 +1,58 @@
-# Example Voting App
+# Voting App: from code to automatic deployment (Capstone 1)
 
-A simple distributed application running across multiple Docker containers.
-
-## Getting started
-
-Download [Docker Desktop](https://www.docker.com/products/docker-desktop) for Mac or Windows. [Docker Compose](https://docs.docker.com/compose) will be automatically installed. On Linux, make sure you have the latest version of [Compose](https://docs.docker.com/compose/install/).
-
-This solution uses Python, Node.js, .NET, with Redis for messaging and Postgres for storage.
-
-Run in this directory to build and run the app:
-
-```shell
-docker compose up
-```
-
-The `vote` app will be running at [http://localhost:8080](http://localhost:8080), and the `results` will be at [http://localhost:8081](http://localhost:8081).
-
-Alternately, if you want to run it on a [Docker Swarm](https://docs.docker.com/engine/swarm/), first make sure you have a swarm. If you don't, run:
-
-```shell
-docker swarm init
-```
-
-Once you have your swarm, in this directory run:
-
-```shell
-docker stack deploy --compose-file docker-stack.yml vote
-```
-
-## Run the app in Kubernetes
-
-The folder k8s-specifications contains the YAML specifications of the Voting App's services.
-
-Run the following command to create the deployments and services. Note it will create these resources in your current namespace (`default` if you haven't changed it.)
-
-```shell
-kubectl create -f k8s-specifications/
-```
-
-The `vote` web app is then available on port 31000 on each host of the cluster, the `result` web app is available on port 31001.
-
-To remove them, run:
-
-```shell
-kubectl delete -f k8s-specifications/
-```
+Forked from [dockersamples/example-voting-app](https://github.com/dockersamples/example-voting-app). A push to `main` tests, scans, builds and deploys the app to Kubernetes on AWS.
 
 ## Architecture
 
-![Architecture diagram](architecture.excalidraw.png)
+```mermaid
+flowchart LR
+  dev[Developer push to main] --> test[test: helm lint, helm template, py_compile]
+  test --> build[build vote, result, worker]
+  build --> trivy[Trivy scan: fails on HIGH or CRITICAL]
+  trivy --> ghcr[(GHCR images tagged with commit SHA)]
+  ghcr --> deploy[deploy: helm upgrade --install --wait]
+  subgraph eks[AWS EKS cluster, eu-north-1, built by Terraform]
+    vote[vote] --> redis[(Redis)]
+    redis --> worker[worker]
+    worker --> db[(PostgreSQL)]
+    result[result] --> db
+  end
+  deploy --> eks
+```
 
-* A front-end web app in [Python](/vote) which lets you vote between two options
-* A [Redis](https://hub.docker.com/_/redis/) which collects new votes
-* A [.NET](/worker/) worker which consumes votes and stores them in…
-* A [Postgres](https://hub.docker.com/_/postgres/) database backed by a Docker volume
-* A [Node.js](/result) web app which shows the results of the voting in real time
+## What is in this repo
 
-## Notes
+- `vote/`, `result/`, `worker/`: the three services, each with a pinned, non-root Dockerfile and a `.dockerignore`.
+- `terraform/`: an EKS cluster and node group (2 x t3.small) in the default VPC.
+- `helm/voting-app/`: one Helm chart with one `values.yaml`.
+- `.github/workflows/ci.yml`: the pipeline.
 
-The voting application only accepts one vote per client browser. It does not register additional votes if a vote has already been submitted from a client.
+## Pipeline
 
-This isn't an example of a properly architected perfectly designed distributed app... it's just a simple
-example of the various types of pieces and languages you might see (queues, persistent data, etc), and how to
-deal with them in Docker at a basic level.
+1. **test**: `helm lint`, `helm template` and a Python compile check.
+2. **build**: each image is built, scanned by Trivy (HIGH and CRITICAL with a fix available fail the job), then pushed to GHCR tagged with the commit SHA.
+3. **deploy**: `helm upgrade --install --wait` with the new SHA as the image tag.
+
+## Secrets
+
+No secrets are stored in Git. The AWS keys and the database password live in GitHub Actions secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `DB_PASSWORD`). The password reaches the cluster as a Kubernetes Secret created by the chart.
+
+## Rebuild the environment from code
+
+```
+cd terraform
+terraform init
+terraform apply
+aws eks update-kubeconfig --name voting-app --region eu-north-1
+```
+
+Then push to `main`, or run the `helm upgrade --install` command from the pipeline.
+
+## Roll back a bad release
+
+```
+helm history voting-app
+helm rollback voting-app <good-revision> --wait
+```
+
+Helm records the rollback as a new revision, so the history is never lost.
