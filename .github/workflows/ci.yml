@@ -66,4 +66,4 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-north-1
       - run: aws eks update-kubeconfig --name voting-app --region eu-north-1
-      - run: helm upgrade --install voting ./helm/voting-app --set image.tag=${{ github.sha }} --wait --timeout 5m
+      - run: helm upgrade --install voting-app ./helm/voting-app --set-string image.tag=${{ github.sha }} --wait --timeout 5m
