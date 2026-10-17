@@ -56,3 +56,5 @@ helm rollback voting-app <good-revision> --wait
 ```
 
 Helm records the rollback as a new revision, so the history is never lost.
+
+<video controls src="helm-rollback-demo.mp4" title="Title"></video>
