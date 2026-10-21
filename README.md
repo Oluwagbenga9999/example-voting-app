@@ -23,7 +23,7 @@ flowchart LR
 ## What is in this repo
 
 - `vote/`, `result/`, `worker/`: the three services, each with a pinned, non-root Dockerfile and a `.dockerignore`.
-- `terraform/`: an EKS cluster and node group (2 x t3.small) in the default VPC.
+- `terraform/`: an EKS cluster and node group (2 x m7i-flex.large) in the default VPC.
 - `helm/voting-app/`: one Helm chart with one `values.yaml`.
 - `.github/workflows/ci.yml`: the pipeline.
 
@@ -54,6 +54,15 @@ Then push to `main`, or run the `helm upgrade --install` command from the pipeli
 helm history voting-app
 helm rollback voting-app <good-revision> --wait
 ```
-
+Real output from a rollback I ran is in [`docs/rollback-evidence.txt`](docs/rollback-evidence.txt).
 Helm records the rollback as a new revision, so the history is never lost.
 
+## Screenshots
+
+Green pipeline run (test, build, Trivy scan, deploy):
+
+![Pipeline run](docs/pipeline-run.png)
+
+All pods running on the EKS cluster:
+
+![Pods running](docs/pods.png)
