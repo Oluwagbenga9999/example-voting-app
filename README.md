@@ -33,6 +33,8 @@ flowchart LR
 2. **build**: each image is built, scanned by Trivy (HIGH and CRITICAL with a fix available fail the job), then pushed to GHCR tagged with the commit SHA.
 3. **deploy**: `helm upgrade --install --wait` with the new SHA as the image tag.
 
+The deploy job only runs when the repository variable `DEPLOY_ENABLED` is set to `true` (Settings → Secrets and variables → Actions → Variables). I keep it off while the EKS cluster is destroyed to avoid AWS charges, so pushes still run the tests, image builds and Trivy scan but skip the deploy.
+
 ## Secrets
 
 No secrets are stored in Git. The AWS keys and the database password live in GitHub Actions secrets (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `DB_PASSWORD`). The password reaches the cluster as a Kubernetes Secret created by the chart.
@@ -62,3 +64,7 @@ Helm records the rollback as a new revision, so the history is never lost.
 Green pipeline run (test, build, Trivy scan, deploy):
 
 ![Pipeline run](docs/pipeline-run.png)
+
+All pods running on the EKS cluster:
+
+![Pods running](docs/pods.png)
