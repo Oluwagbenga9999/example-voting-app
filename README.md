@@ -62,7 +62,3 @@ Helm records the rollback as a new revision, so the history is never lost.
 Green pipeline run (test, build, Trivy scan, deploy):
 
 ![Pipeline run](docs/pipeline-run.png)
-
-All pods running on the EKS cluster:
-
-![Pods running](docs/pods.png)
